@@ -1,0 +1,246 @@
+PROJECT EXPLANATION Zomato / Swiggy Review Analyser Python + Streamlit +
+Ollama + Qwen2.5
+
+1.  PROJECT OVERVIEW This project analyses restaurant reviews and turns
+    them into a structured business report. A user can paste reviews
+    from Zomato, Swiggy, or Google Reviews. The application sends the
+    text to a locally running language model through Ollama. The model
+    generates an overall sentiment, estimated rating, verdict, summary,
+    positives, negatives, customer pain points, business suggestions,
+    best-for categories, and keywords.
+
+The purpose is to help a restaurant owner quickly understand customer
+feedback and identify areas that may need improvement. The rating is an
+AI-generated estimate, not an official Zomato or Swiggy rating, and the
+model can make mistakes.
+
+2.  TECHNOLOGIES USED
+
+-   Python: main application logic, prompts, HTTP requests, parsing, and
+    error handling.
+-   Streamlit: creates the interactive web interface.
+-   Ollama: runs the language model locally and provides a local HTTP
+    API.
+-   Qwen2.5: the language model that analyses the review text.
+-   requests: sends HTTP requests to Ollama.
+-   json: parses the model’s structured response.
+-   re: attempts to find JSON in a response if direct JSON parsing
+    fails.
+-   HTML/CSS: customises the Streamlit page and result cards.
+
+3.  PROJECT FILES
+
+-   app.py: main application code.
+-   requirements.txt: Python dependencies, installed using
+    python -m pip install -r requirements.txt.
+-   README.md: project overview and setup guide.
+-   .gitignore: tells Git which local or sensitive files should not be
+    uploaded.
+-   sample_reviews.txt: example reviews for testing.
+-   project_Explain.txt: this step-by-step explanation.
+
+4.  HOW THE APPLICATION WORKS
+
+STEP 1 — Import libraries The application imports json, re, requests,
+and streamlit. Purpose: JSON parsing, fallback text matching, HTTP
+communication, and the user interface.
+
+STEP 2 — Configure the Streamlit page st.set_page_config() sets
+page-level details such as the title and layout. Purpose: make the app
+appear with the intended browser title and layout.
+
+STEP 3 — Apply styling st.markdown() with HTML/CSS styles the title,
+input area, result cards, and metric boxes. Purpose: make the interface
+easier to read. Security note: content from users or the model should be
+treated as untrusted. Avoid inserting it into HTML without escaping it,
+especially when unsafe_allow_html=True is used.
+
+STEP 4 — Check Ollama check_ollama_running() sends a GET request to
+http://localhost:11434. If the service responds with status 200, the
+check succeeds. If the request fails, the function returns False.
+Purpose: check that the local model service is available before
+analysis. If Ollama is not running, the app displays an error and
+instructions.
+
+STEP 5 — Choose settings The sidebar lets the user select a model,
+output language (English, Telugu, or Tenglish), and temperature. -
+Model: tells Ollama which installed model to use. - Language: asks the
+model to write its report in the selected language. - Temperature:
+controls generation randomness. Lower values often give more consistent
+output but do not guarantee valid JSON. Important: the model tag in the
+selector must match the model downloaded in Ollama and the tag shown in
+setup instructions. The supplied app’s selector shows qwen2.5:1.5b,
+while some setup text mentions qwen2.5:3b. Choose one and make these
+consistent.
+
+STEP 6 — Provide reviews The app defines a sample_reviews string with
+example feedback about food, delivery, packaging, pricing, service,
+ambience, and desserts. st.text_area() displays it in an editable text
+box. Purpose: users can test the app immediately or paste their own
+reviews.
+
+STEP 7 — Count review lines The app counts non-empty lines and displays
+the count. Purpose: show how many review lines were entered. Note: the
+interface label says “Paste 5–20 restaurant reviews”, but counting lines
+alone does not enforce a strict minimum or maximum. Additional
+validation is needed if the app must reject inputs outside that range.
+
+STEP 8 — Click Analyse Reviews When the button is clicked, the app
+checks whether the input is empty. If empty, it displays a warning.
+Otherwise, it displays a spinner while analysis runs. Purpose: avoid
+sending empty input and show that processing is underway.
+
+STEP 9 — Build the prompt analyse_reviews_ollama() creates a system
+prompt and a user prompt. The system prompt asks the model to act as a
+restaurant review analyst and return valid JSON only. The user prompt
+contains the actual reviews, the expected JSON fields, and the output
+language. Purpose: clearly tell the model what to analyse and how to
+structure its answer.
+
+STEP 10 — Send a request to Ollama The payload contains the model tag,
+system and user messages, stream=False, and the selected temperature.
+requests.post() sends the request to the local Ollama chat API.
+response.raise_for_status() raises an error for an unsuccessful HTTP
+status. Purpose: connect the Streamlit application to the locally
+running language model.
+
+STEP 11 — Read and parse the response The app reads the generated text
+from the response’s message content. extract_json() first tries
+json.loads(). If that fails, it tries to locate a JSON object using a
+regular expression and parse the match. Purpose: convert model-generated
+JSON text into a Python dictionary that the UI can use. Limitation:
+malformed JSON, extra braces, or an incorrect regular expression can
+make parsing fail. Validate required keys and value types after parsing.
+If parsing fails, the app displays an error.
+
+STEP 12 — Handle errors The app catches HTTP errors and other
+exceptions. It displays an error message and may suggest checking
+whether the model is installed or lowering the temperature. Purpose:
+help the user understand common failures such as Ollama being
+unavailable, a missing model, a failed request, or invalid JSON.
+
+STEP 13 — Save the result After successful analysis, the result is
+stored in st.session_state["analysis_result"]. The Clear Result button
+removes it and reruns the page. Purpose: Streamlit reruns the script
+when users interact with widgets; session state keeps the result
+available during those reruns.
+
+STEP 14 — Display the report The app displays metrics for overall
+sentiment, estimated rating, and the one-line verdict, along with
+sections for summary, positive points, negative points, pain points,
+business suggestions, best-for categories, and keywords. Purpose:
+present the model response as a readable business report.
+
+STEP 15 — Download the result The app provides a control to download the
+analysis as JSON. Purpose: save the structured report for later review
+or processing.
+
+5.  END-TO-END WORKFLOW
+
+6.  User opens the Streamlit page.
+
+7.  App checks the local Ollama service.
+
+8.  User enters reviews and chooses settings.
+
+9.  User clicks Analyse Reviews.
+
+10. Python builds the prompt and JSON requirements.
+
+11. The request is sent to Ollama.
+
+12. Qwen2.5 generates a response.
+
+13. Python parses the JSON.
+
+14. The result is saved in Streamlit session state.
+
+15. Streamlit displays the report and offers a JSON download.
+
+16. HOW TO SET UP AND RUN Requirements: Python, Ollama, and the exact
+    model tag configured in app.py.
+
+From PowerShell in the project folder: 1. python -m venv .venv 2.
+.\.venv\Scripts\Activate.ps1 3.
+python -m pip install -r requirements.txt 4. Download the selected
+model. If app.py selects qwen2.5:1.5b, run ollama pull qwen2.5:1.5b. If
+you configure it to use qwen2.5:3b, run ollama pull qwen2.5:3b. 5.
+Ensure Ollama is running. If needed, run ollama serve in a separate
+terminal. 6. Run streamlit run app.py. 7. Open the local browser page,
+paste reviews, select settings, and click Analyse Reviews.
+
+7.  EXAMPLE Input reviews:
+
+-   The biryani tastes great.
+-   Delivery arrived late and the food was cold.
+-   Packaging was neat.
+-   Prices are high for the quantity.
+-   Customer support was not helpful.
+
+The model might classify the feedback as Mixed, identify food taste and
+packaging as positives, and identify delivery, pricing, and customer
+support as areas to improve. This is an illustration only; actual
+results depend on the input and model.
+
+8.  PURPOSE AND BENEFITS
+
+-   Reduces time spent manually reading many reviews.
+-   Organises unstructured text into consistent categories.
+-   Highlights repeated positives and complaints.
+-   Gives business owners suggestions to consider.
+-   Offers different output-language choices.
+-   Uses a locally running model through Ollama by default rather than a
+    hosted model API.
+
+Local execution does not automatically guarantee complete privacy; avoid
+entering sensitive customer information unnecessarily.
+
+9.  LIMITATIONS AND IMPROVEMENTS
+
+-   AI sentiment and ratings can be inaccurate; treat them as estimates.
+-   Validate JSON fields and types.
+-   Enforce the stated 5–20 review limit if required.
+-   Make the model tag consistent in the selector, setup instructions,
+    and page badge.
+-   Test and correct the JSON extraction fallback.
+-   Escape untrusted content before rendering HTML.
+-   Add tests for empty input, malformed JSON, missing models, and
+    connection errors.
+-   Add a screenshot and clear instructions to README.md.
+-   Consider separating prompt creation, Ollama communication, parsing,
+    and UI rendering into separate modules as the project grows.
+
+10. INTERVIEW QUESTIONS
+
+What is the project’s purpose? It turns restaurant reviews into a
+structured report with sentiment, an estimated rating, strengths,
+weaknesses, pain points, and suggestions.
+
+Why Streamlit? It makes it possible to build an interactive Python web
+interface quickly.
+
+Why Ollama? It runs the selected language model locally and exposes an
+HTTP API.
+
+Why a language model? Reviews are unstructured natural language. A model
+can summarise and categorise them.
+
+Why JSON? JSON provides named fields and arrays that Python can parse
+and display separately.
+
+What is temperature? It controls generation randomness. Lower values
+often improve consistency but do not guarantee correctness.
+
+What is session state? It stores values across Streamlit script reruns
+during the user’s session.
+
+Is the rating official? No. It is an AI-generated estimate based on the
+submitted review text.
+
+11. SUMMARY The project combines Python, Streamlit, Ollama, and Qwen2.5.
+    The user submits reviews, Python creates a structured prompt, Ollama
+    runs the model, the response is parsed as JSON, and Streamlit
+    displays a business report with a download option. The project
+    demonstrates Python functions, HTTP requests, prompt engineering,
+    structured output, JSON parsing, exception handling, Streamlit
+    widgets, session state, and local language-model integration.
